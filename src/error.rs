@@ -40,7 +40,7 @@ impl Error for GenError {}
 
 impl From<std::io::Error> for GenError {
     fn from(e: std::io::Error) -> Self {
-        GenError::new_with(format!("error from io, namely {}", e.to_string()).as_str())
+        GenError::new_with(format!("error from io, namely {}", e).as_str())
     }
 }
 

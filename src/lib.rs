@@ -92,9 +92,9 @@ mod error;
 ///
 /// ```
 pub fn generate(json: &mut JsonTemplate,
-                rep: usize,
+                rep: u32,
                 pretty: bool,
-                outputs: &mut Vec<Box<dyn Sender>>) -> Vec<Value> {
+                outputs: &mut [Box<dyn Sender>]) -> Vec<Value> {
     debug!("generate the {} repetitions. ", rep);
     let mut res = vec![];
     for _ in 0..rep {
@@ -122,7 +122,7 @@ mod tests {
         let jt_body = r#"{"|id": "uuid()"}"#;
         let mut js_template = JsonTemplate::from_str(jt_body, "|").unwrap();
         if_let!(
-            generate(&mut js_template,1,true,&mut vec![]).get(0)
+            generate(&mut js_template,1,true,&mut []).get(0)
                 => Some(Value::Object(map))
                 => assert!(map.get("id").and_then(|e|e.as_str()).unwrap().len() == 36 ));
     }
@@ -159,8 +159,8 @@ mod tests {
 }
             "#;
         let mut js_template = JsonTemplate::from_str(jt_body, "|").unwrap();
-        let json = generate(&mut js_template, 1, true, &mut vec![]);
-        println!("{}", json.get(0).unwrap().to_string());
+        let json = generate(&mut js_template, 1, true, &mut []);
+        println!("{}", json.get(0).unwrap());
         if_let!(
             json.get(0)
                 => Some(Value::Object(values)) => {

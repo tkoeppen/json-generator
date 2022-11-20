@@ -1,5 +1,5 @@
 use crate::generator::{GeneratorFunc, Generator, Func, new_func};
-use rand::distributions::Alphanumeric;
+use rand::distributions::{Alphanumeric, DistString};
 use rand::prelude::ThreadRng;
 use uuid::Uuid;
 use rand::Rng;
@@ -8,7 +8,6 @@ use rand::seq::SliceRandom;
 use std::fs::File;
 use std::io::{Read, Error};
 use serde_json::Value;
-use std::iter::FromIterator;
 use crate::generator::from_string::FromStringTo;
 use crate::error::GenError;
 
@@ -88,7 +87,7 @@ impl RandomInt {
 impl GeneratorFunc for RandomInt {
     fn next_value(&mut self) -> Value {
         Value::from(
-            self.rng.gen_range(self.start, self.end)
+            self.rng.gen_range(self.start..self.end)
         )
     }
 }
@@ -127,15 +126,16 @@ impl RandomString {
 
 impl GeneratorFunc for RandomString {
     fn next_value(&mut self) -> Value {
-        let random_str = String::from_iter(
-            self.rng
-                .sample_iter(&Alphanumeric)
-                .take(self.len));
-        Value::from(format!("{}{}{}", self.prefix, random_str, self.postfix))
+        let random_string = Alphanumeric.sample_string(&mut self.rng, self.len);
+        Value::from(format!("{}{}{}", self.prefix, random_string, self.postfix))
+    }
+
+    fn merge(&self, _another_gf: Func) -> Result<Func, GenError> {
+        Err(GenError::new_with("the functions are unable to merge in the order"))
     }
 }
 
-/// The function generated current data time
+/// The function generated current date time
 pub struct CurrentDateTime {
     /// the format of generating output
     pub format: String
@@ -190,7 +190,7 @@ pub struct RandomFromFile<T: FromStringTo + Clone + Into<Value>> {
 
 impl<T: FromStringTo + Clone + Into<Value>> RandomFromFile<T> {
     pub fn new(path: &str, delim: &str) -> Result<Self, GenError> {
-        let values = process_string(read_file_into_string(path)?, delim)?;
+        let values = process_string(&read_file_into_string(path)?, delim)?;
         let rng = Default::default();
         Ok(
             RandomFromFile {
@@ -206,7 +206,7 @@ impl<T: Clone + FromStringTo + Into<Value>> GeneratorFunc for RandomFromFile<T> 
     }
 }
 
-fn process_string<T: FromStringTo>(v: String, d: &str) -> Result<Vec<T>, GenError> {
+fn process_string<T: FromStringTo>(v: &str, d: &str) -> Result<Vec<T>, GenError> {
     let del = match d.trim() {
         r#"\r\n"# => "\r\n",
         r#"\n"# => "\n",
@@ -218,7 +218,7 @@ fn process_string<T: FromStringTo>(v: String, d: &str) -> Result<Vec<T>, GenErro
 
     let trim_spaces = del != " ";
 
-    for el in v.split(del).into_iter() {
+    for el in v.split(del) {
         let v = FromStringTo::parse(el, trim_spaces)?;
         res.push(v);
     }
@@ -301,9 +301,9 @@ mod tests {
     fn random_int_test() {
         let g = gen(RandomInt::new(-1000, 1000));
 
-        if_let!(g.next().as_i64() => Some(el) => assert!(el >= -1000 && el <= 1000));
-        if_let!(g.next().as_i64() => Some(el) => assert!(el >= -1000 && el <= 1000));
-        if_let!(g.next().as_i64() => Some(el) => assert!(el >= -1000 && el <= 1000));
+        if_let!(g.next().as_i64() => Some(el) => assert!((-1000..=1000).contains(&el)));
+        if_let!(g.next().as_i64() => Some(el) => assert!((-1000..=1000).contains(&el)));
+        if_let!(g.next().as_i64() => Some(el) => assert!((-1000..=1000).contains(&el)));
     }
 
     #[test]
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn from_file_test() {
         let g = RandomFromFile::<i64>::new(r#"jsons/numbers"#, ",")
-            .map(|f| Generator::new(f));
+            .map(Generator::new);
 
         if_let!(g => Ok(g) => if_let!(g.next() => Value::Number(el) => {
             let el = el.as_i64().unwrap();
@@ -355,7 +355,7 @@ mod tests {
         }));
 
         let g = RandomFromFile::<String>::new(r#"jsons/cities"#, "\n")
-            .map(|f| Generator::new(f));
+            .map(Generator::new);
 
         if_let!(g => Ok(g) => if_let!(g.next() => Value::String(city) => {
             assert!("BerlinPragueMoscowLondonHelsinkiRomeBarcelonaViennaAmsterdamDublin".contains(&city))
@@ -372,24 +372,24 @@ mod tests {
 
     #[test]
     fn from_string_test() {
-        let vec = process_string::<String>("a,b,c".to_string(), ",").unwrap();
+        let vec = process_string::<String>("a,b,c", ",").unwrap();
         assert_eq!(vec, vec!["a".to_string(), "b".to_string(), "c".to_string()]);
 
-        let vec = process_string::<i32>("1,2,3".to_string(), ",").unwrap();
+        let vec = process_string::<i32>("1,2,3", ",").unwrap();
         assert_eq!(vec, vec![1, 2, 3]);
 
-        let err = process_string::<i32>("1,c,3".to_string(), ",");
+        let err = process_string::<i32>("1,c,3", ",");
         assert_eq!(err.err().unwrap().to_string(), "error while parsing a generator func, reason: impossible to convert string to i32 due to invalid digit found in string and type: Parser");
 
-        let vec = process_string::<i64>("-1,-2,-3".to_string(), ",").unwrap();
+        let vec = process_string::<i64>("-1,-2,-3", ",").unwrap();
         assert_eq!(vec, vec![-1, -2, -3]);
 
-        let vec = process_string::<i64>(" -1 , -2 , -3 ".to_string(), ",").unwrap();
+        let vec = process_string::<i64>(" -1 , -2 , -3 ", ",").unwrap();
         assert_eq!(vec, vec![-1, -2, -3]);
-        let vec = process_string::<i64>(" - 1  , - 2 , - 3 ".to_string(), ",").unwrap();
+        let vec = process_string::<i64>(" - 1  , - 2 , - 3 ", ",").unwrap();
         assert_eq!(vec, vec![-1, -2, -3]);
 
-        let vec = process_string::<i64>("-1 -2 -3".to_string(), " ").unwrap();
+        let vec = process_string::<i64>("-1 -2 -3", " ").unwrap();
         assert_eq!(vec, vec![-1, -2, -3]);
     }
 
@@ -404,7 +404,7 @@ mod tests {
                 for e in elems.into_iter() {
                     if_let!(e => Value::Number(el) => {
                     let el = el.as_i64().unwrap();
-                    assert_eq!(el > 0 && el < 100, true)
+                    assert!(el > 0 && el < 100)
                     })
                 }
             }

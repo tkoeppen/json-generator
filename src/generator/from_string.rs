@@ -17,7 +17,7 @@ impl FromStringTo for i64 {
         let value = if rem_spaces { trim_spaces(v) } else { v.to_string() };
         value.parse::<i64>()
             .map_err(|e| GenError::new_with_in_parser(
-                format!("impossible to convert string to i64 due to {}", e.to_string()).as_str()
+                format!("impossible to convert string to i64 due to {}", e).as_str()
             ))
     }
 }
@@ -27,7 +27,7 @@ impl FromStringTo for i32 {
         let value = if rem_spaces { trim_spaces(v) } else { v.to_string() };
         value.parse::<i32>()
             .map_err(|e| GenError::new_with_in_parser(
-                format!("impossible to convert string to i32 due to {}", e.to_string()).as_str()
+                format!("impossible to convert string to i32 due to {}", e).as_str()
             ))
     }
 }
@@ -37,11 +37,11 @@ impl FromStringTo for usize {
         let value = if rem_spaces { trim_spaces(v) } else { v.to_string() };
         value.parse::<usize>()
             .map_err(|e| GenError::new_with_in_parser(
-                format!("impossible to convert string to usize due to {}", e.to_string()).as_str()
+                format!("impossible to convert string to usize due to {}", e).as_str()
             ))
     }
 }
 
 fn trim_spaces(v: &str) -> String {
-    v.replace(" ", "")
+    v.replace(' ', "")
 }

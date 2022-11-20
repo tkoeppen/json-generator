@@ -4,7 +4,7 @@ macro_rules! if_let {
         if let $exp_res = $gen_res {
             $next_check
         } else{
-            panic!(format!("the epr {:?} is not equal to expected one",$gen_res))
+            panic!("{}", format!("the epr {:?} is not equal to expected one",$gen_res))
         }
 
     };
@@ -13,7 +13,7 @@ macro_rules! if_let {
         if $left == $right {
           $next_check
         } else{
-            panic!(format!("the left {:?} is not equal to the right",$left))
+            panic!("{}", format!("the left {:?} is not equal to the right",$left))
         }
 
     }

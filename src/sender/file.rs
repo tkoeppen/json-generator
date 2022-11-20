@@ -14,20 +14,22 @@ pub struct FolderSender {
 }
 
 impl FolderSender {
+    /// # Panics
+    /// if the path is not a directory
     pub fn new(path: String) -> Self {
         match metadata(path.clone()) {
             Ok(m) => {
                 if !m.is_dir() {
-                    panic!(format!("the output path {} to the file should point to a folder.", path));
+                    panic!("{}", format!("the output path {} to the file should point to a folder.", path));
                 }
             }
             Err(e) =>
                 if !Path::new(path.as_str()).exists() {
                     match create_dir_all(path.as_str()) {
                         Ok(_) => (),
-                        Err(e) => panic!("error occurred while creating or open the file:{}", e.to_string()),
+                        Err(e) => panic!("error occurred while creating or open the file:{}", e),
                     }
-                } else { panic!("the error occurred with the output file: {}", e.to_string()) }
+                } else { panic!("the error occurred with the output file: {}", e) }
         }
         debug!("the folder sender with the path {} has been created successfully", path);
         FolderSender { path, idx: 0 }
@@ -50,7 +52,7 @@ impl Sender for FolderSender {
 
         let js =  string_from(json, pretty)?;
         if let Err(e) = file.write_all(js.into_bytes().as_slice()) {
-            Err(GenError::new_with_in_sender(format!("error while appending to a file: {}", e.to_string()).as_str()))
+            Err(GenError::new_with_in_sender(format!("error while appending to a file: {}", e).as_str()))
         } else {
             let res = format!("the item {} has been saved in the folder: {}", self.idx, self.path);
             self.idx += 1;
@@ -65,19 +67,20 @@ impl Sender for FolderSender {
 pub struct FileSender {
     path: String
 }
-
-
 impl FileSender {
+    /// # Panics
+    ///
+    /// Will panic if the path to the file is not valid
     pub fn new(path: String) -> Self {
         match metadata(path.clone()) {
             Ok(m) => {
                 if m.is_dir() {
-                    panic!(format!("the output path {} should point to a file not to a folder.", path));
+                    panic!("{}", format!("the output path {} should point to a file not to a folder.", path));
                 }
             }
             Err(_) => match create_file(path.as_str()) {
                 Ok(_) => (),
-                Err(str) => panic!("the error: {} while creating a file {}",str.to_string(), path),
+                Err(str) => panic!("the error: {} while creating a file {}",str, path),
             }
         }
 
@@ -91,7 +94,7 @@ fn create_file(path: &str) -> Result<(), GenError> {
         match File::create(path) {
             Ok(_) => Ok(()),
             Err(e) => Err(GenError::new_with_in_sender(
-                format!("error occurred while creating or open the file:{}", e.to_string())
+                format!("error occurred while creating or open the file:{}", e)
                     .as_str())),
         }
     } else { Ok(()) }
@@ -106,7 +109,7 @@ impl Sender for FileSender {
 
         let js = string_from(json, pretty)?;
         if let Err(e) = file.write_all(js.into_bytes().as_slice()) {
-            Err(GenError::new_with_in_sender(format!("error occurred while appending to the file: {}", e.to_string())
+            Err(GenError::new_with_in_sender(format!("error occurred while appending to the file: {}", e)
                 .as_str()))
         } else {
             Ok(format!("the item has been saved to the file: {}", self.path))
@@ -130,7 +133,7 @@ mod tests {
             match remove_file(path) {
                 Ok(_) => Ok(()),
                 Err(e) => Err(GenError::new_with_in_sender(
-                    format!("error occurred while remove the file:{}", e.to_string()).as_str())),
+                    format!("error occurred while remove the file:{}", e).as_str())),
             }
         }
     }
@@ -141,7 +144,7 @@ mod tests {
             match remove_dir(path) {
                 Ok(_) => Ok(()),
                 Err(e) => Err(GenError::new_with_in_sender(
-                    format!("error occurred while remove the file:{}", e.to_string()).as_str())),
+                    format!("error occurred while remove the file:{}", e).as_str())),
             }
         }
     }

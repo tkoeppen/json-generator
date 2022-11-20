@@ -15,7 +15,7 @@ fn current_dt(i: &str) -> IResult<&str, Generator> {
     func("dt",
          args_string(|elems| {
              let format =
-                 elems.get(0)
+                 elems.first()
                      .filter(|e| !e.is_empty())
                      .map(move |f| f.trim())
                      .unwrap_or("%Y-%m-%d %H:%M:%S").to_string();
@@ -36,7 +36,7 @@ fn sequence(i: &str) -> IResult<&str, Generator> {
     func("seq", args_string(|elems| {
         new({
             let val =
-                if let Some(Ok(new_val)) = elems.get(0).map(|e| e.parse()) { new_val } else { 0 };
+                if let Some(Ok(new_val)) = elems.first().map(|e| e.parse()) { new_val } else { 0 };
 
             let step =
                 if let Some(Ok(new_step)) = elems.get(1).map(|e| e.parse()) { new_step } else { 1 };
@@ -51,7 +51,7 @@ fn random_string(i: &str) -> IResult<&str, Generator> {
     func("str", args_string(|elems| {
         new({
             let n =
-                if let Some(Ok(new_n)) = elems.get(0).map(|e| e.parse()) { new_n } else { 0 };
+                if let Some(Ok(new_n)) = elems.first().map(|e| e.parse()) { new_n } else { 0 };
 
             let prefix =
                 if let Some(Ok(new_p)) = elems.get(1).map(|e| e.parse()) { new_p } else { String::new() };
@@ -104,7 +104,7 @@ fn random_int_from_list(i: &str) -> IResult<&str, Generator> {
 
 fn random_array_empty(i: &str) -> IResult<&str, Generator> {
     func("array", args(|elems| {
-        let len = if let Some(idx) = elems.get(0) { *idx as usize } else { 1 as usize };
+        let len = if let Some(idx) = elems.first() { *idx as usize } else { 1_usize };
         new(RandomArray::new_size(len))
     }, str_to_int))(i)
 }
@@ -113,7 +113,7 @@ fn random_str_from_file(i: &str) -> IResult<&str, Generator> {
     func("str_from_file",
          args_string(|elems| {
              match elems[..] {
-                 [path, d1, d2] if d1 == "" && d2 == "" =>
+                 [path, d1, d2] if d1.is_empty() && d2.is_empty() =>
                      new(RandomFromFile::<String>::new(path, ",")?),
                  [path, d] =>
                      new(RandomFromFile::<String>::new(path, d)?),
@@ -126,7 +126,7 @@ fn random_int_from_file(i: &str) -> IResult<&str, Generator> {
     func("int_from_file",
          args_string(|elems| {
              match elems[..] {
-                 [path, d1, d2] if d1 == "" && d2 == "" =>
+                 [path, d1, d2] if d1.is_empty() && d2.is_empty() =>
                      new(RandomFromFile::<i64>::new(path, ",")?),
                  [path, d] =>
                      new(RandomFromFile::<i64>::new(path, d)?),
@@ -274,32 +274,32 @@ mod tests {
     #[test]
     fn random_int_test() {
         if_let!(gen("int(0,10)") => Ok(g) => {
-             for _ in (0..1000).into_iter() {
+             for _ in 0..1000 {
                  let n = g.next().as_i64().unwrap();
                  assert!(n >-1 && n < 11 )
                }
         });
 
         if_let!(gen("int(-10,11)") => Ok(g) => {
-            for _ in (0..1000).into_iter() {
+            for _ in 0..1000 {
                  let n = g.next().as_i64().unwrap();
                  assert!(n > -11 && n < 11 )
                }
         });
         if_let!(gen("int(-10)") => Ok(g) => {
-            for _ in (0..1000).into_iter() {
+            for _ in 0..1000 {
                  let n = g.next().as_i64().unwrap();
                  assert!(n > -11 && n < 1000 )
                }
         });
         if_let!(gen("int()") => Ok(g) => {
-            for _ in (0..1000).into_iter() {
+            for _ in 0..1000 {
                  let n = g.next().as_i64().unwrap();
                  assert!(n > -1 && n < 1000 )
                }
         });
         if_let!(gen("int(,10)") => Ok(g) => {
-            for _ in (0..1000).into_iter() {
+            for _ in 0..1000 {
                  let n = g.next().as_i64().unwrap();
                  assert!(n > -1 && n < 10 )
                }
@@ -359,7 +359,7 @@ mod tests {
         if_let!(gen(r#"int_from_file(jsons/numbers_negate,,)"#)
                 => Ok(g)
                 => {
-                for _ in (1..100).into_iter(){
+                for _ in 1..100 {
                  let n = g.next().as_i64().unwrap();
                  assert!(n > -4 && n < 4)
                 }

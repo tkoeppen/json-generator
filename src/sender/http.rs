@@ -78,12 +78,11 @@ mod tests {
             let res = curl(
                 r#"-X POST 127.0.0.1:7878 -H Content-Type:application/json"#,
                 r#"{"key1":"value1", "key2":"value2"}"#).expect("no error");
-            match res {
-                Output { status, stderr, stdout } => {
-                    println!("status : {}", status);
-                    println!("{}", std::str::from_utf8(&stdout).expect("the curl command should be correct"));
-                    println!("{}", std::str::from_utf8(&stderr).expect("the curl command should be correct"));
-                }
+            let Output { status, stderr, stdout } = res;
+            {
+                println!("status : {}", status);
+                println!("{}", std::str::from_utf8(&stdout).expect("the curl command should be correct"));
+                println!("{}", std::str::from_utf8(&stderr).expect("the curl command should be correct"));
             }
         }
     }

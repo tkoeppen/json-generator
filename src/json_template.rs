@@ -35,11 +35,11 @@ impl ToString for JsonTemplate {
                 let mut res = "{".to_string();
                 for (k, v) in pairs.iter() {
                     res.push_str(k.as_str());
-                    res.push_str(":");
+                    res.push(':');
                     res.push_str(v.to_string().as_str());
-                    res.push_str(",")
+                    res.push(',')
                 }
-                res.push_str("}");
+                res.push('}');
                 res
             }
             Array(elems) => {
@@ -47,9 +47,9 @@ impl ToString for JsonTemplate {
 
                 for e in elems.iter() {
                     res.push_str(e.to_string().as_str());
-                    res.push_str(",")
+                    res.push(',')
                 }
-                res.push_str("]");
+                res.push(']');
                 res
             }
             Plain(v) => v.to_string(),
